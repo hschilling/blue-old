@@ -68,6 +68,7 @@ class SqliteRecorder(BaseRecorder):
         #   called for rank 0 when running in parallel and so the MPI gather
         #   that is called in that function won't work. All processes
         #   need to participate in that collective call
+        print 'model_viewer_data being set for sqlite recorder', model_viewer_data
         self.model_viewer_data = get_model_viewer_data(group)
 
     def record_metadata(self, group):

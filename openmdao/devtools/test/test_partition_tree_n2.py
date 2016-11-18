@@ -67,7 +67,9 @@ class TestExamples(unittest.TestCase):
 
         top.setup(check=False)
 
+        print "running test_beam_tutorial_viewmodel_using_data_from_sqlite_case_recorder_file model"
         top.run()
+        print "done running test_beam_tutorial_viewmodel_using_data_from_sqlite_case_recorder_file model"
         view_model(filename, show_browser=False)
 
         self.assertTrue(os.path.isfile('partition_tree_n2.html'))

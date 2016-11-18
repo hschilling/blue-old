@@ -198,6 +198,8 @@ def view_model(problem_or_filename, outfile='partition_tree_n2.html', show_brows
     """
     viewer = 'partition_tree_n2.template'
 
+    print 'in view_model with problem_or_filename', problem_or_filename
+
     code_dir = os.path.dirname(os.path.abspath(__file__))
 
     with open(os.path.join(code_dir, viewer), "r") as f:
@@ -240,6 +242,8 @@ def view_model(problem_or_filename, outfile='partition_tree_n2.html', show_brows
         file_type = None
         if is_valid_sqlite3_db(problem_or_filename):
             db = SqliteDict(filename=problem_or_filename, flag='r', tablename='metadata')
+
+            print 'in view_model, sqlite db keys are', db.keys()
             file_type = "sqlite"
         else:
             try:
@@ -247,6 +251,8 @@ def view_model(problem_or_filename, outfile='partition_tree_n2.html', show_brows
                 file_type = 'hdf5'
             except:
                 raise ValueError("The given filename is not one of the supported file formats: sqlite or hdf5")
+
+        print 'in view_model, file_type is', file_type
 
         if file_type == "sqlite":
             model_viewer_data = db['model_viewer_data']
