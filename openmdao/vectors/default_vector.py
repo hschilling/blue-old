@@ -104,7 +104,8 @@ class DefaultVector(Vector):
         """Internally allocate vectors.
         Must be implemented by the subclass.
         Sets the following attributes:
-            _data
+
+        - _data
 
         Args
         ----
@@ -120,9 +121,11 @@ class DefaultVector(Vector):
         """Internally assemble views onto the vectors.
         Must be implemented by the subclass.
         Sets the following attributes:
-            _views
-            _views_flat
-            _idxs
+    
+        - _views
+        - _views_flat
+        - _idxs
+        
         """
         variable_sizes = self._assembler._variable_sizes[self._typ]
         variable_set_indices = self._assembler._variable_set_indices[self._typ]
@@ -232,7 +235,7 @@ class DefaultVector(Vector):
     def get_norm(self):
         """Return the norm of this vector.
         Must be implemented by the subclass.
-        
+
         Returns
         -------
         float

@@ -8,8 +8,9 @@ class Vector(object):
     This class is instantiated for inputs, outputs, and residuals.
     It provides a dictionary interface and an arithmetic operations interface.
     Implementations:
-        <DefaultVector>
-        <PETScVector>
+    
+    - <DefaultVector>
+    - <PETScVector>
 
     Attributes
     ----------
@@ -198,7 +199,8 @@ class Vector(object):
         """Internally allocate vectors.
         Must be implemented by the subclass.
         Sets the following attributes:
-            _data
+
+        - _data
 
         Args
         ----
@@ -211,9 +213,11 @@ class Vector(object):
         """Internally assemble views onto the vectors.
         Must be implemented by the subclass.
         Sets the following attributes:
-            _views
-            _views_flat
-            _idxs
+
+        - _views
+        - _views_flat
+        - _idxs
+
         """
         pass
     def _clone_data(self):
@@ -304,8 +308,9 @@ class Transfer(object):
     """Base Transfer class.
 
     Implementations:
-        <DefaultTransfer>
-        <PETScTransfer>
+
+    - <DefaultTransfer>
+    - <PETScTransfer>
 
     Attributes
     ----------
