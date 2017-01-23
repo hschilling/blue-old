@@ -208,6 +208,11 @@ def get_unit_test_source_and_run_outputs(method_path):
 
     if PY3:
         run_outputs = "".join(map(chr, run_outputs)) # in Python 3, run_outputs is of type bytes!
+
+    # Prepend the run outputs with >>>
+    run_outputs = ['>>> ' + s for s in run_outputs.splitlines()]
+    run_outputs = '\n'.join(run_outputs)
+
     return source_minus_docstrings_with_prints_cleaned, run_outputs
 
 
