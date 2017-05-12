@@ -106,7 +106,7 @@ class SqliteRecorder(BaseRecorder):
         super(SqliteRecorder, self).startup(object_requesting_recording)
         self._counter = 0
 
-    def record_iteration(self, object_requesting_recording, metadata):
+    def record_iteration(self, object_requesting_recording, metadata, method=None):
         """
         Store the provided data in the sqlite file using the iteration coordinate for the key.
         """
@@ -117,7 +117,7 @@ class SqliteRecorder(BaseRecorder):
             self.record_iteration_driver(object_requesting_recording, metadata)
 
         elif isinstance(object_requesting_recording, System):
-            self.record_iteration_system(object_requesting_recording, metadata)
+            self.record_iteration_system(object_requesting_recording, metadata, method)
 
         elif isinstance(object_requesting_recording, Solver):
             self.record_iteration_solver(object_requesting_recording, metadata)
@@ -236,21 +236,20 @@ class SqliteRecorder(BaseRecorder):
                                                      responses_blob, objectives_blob,
                                                      constraints_blob))
 
-    def record_iteration_system(self, object_requesting_recording, metadata):
+    def record_iteration_system(self, object_requesting_recording, metadata, method):
         """
         Record an iteration using system options.
         """
+        if method not in ['_apply_linear', '_apply_nonlinear', '_solve_linear',
+                          '_solve_nonlinear']:
+            raise ValueError("method must not be one of: '_apply_linear, "
+                             "_apply_nonlinear, _solve_linear, _solve_nonlinear'")
 
-        # TODO_RECORDER - clean this up
-        # if not hasattr(object_requesting_recording,'pathname'):
-        #     pass
-        # print('recording_system', object_requesting_recording.pathname, metadata['caller'], object_requesting_recording._inputs._data[0])
+        if 'nonlinear' in method:
+            inputs, outputs, residuals = object_requesting_recording.get_nonlinear_vectors()
+        else:
+            inputs, outputs, residuals = object_requesting_recording.get_linear_vectors()
 
-        inputs_array = None
-        outputs_array = None
-        residuals_array = None
-
-        inputs, outputs, residuals = object_requesting_recording.get_nonlinear_vectors()
         inputs_array = outputs_array = residuals_array = None
 
         # Inputs
@@ -415,7 +414,7 @@ class SqliteRecorder(BaseRecorder):
             elif isinstance(object_requesting_recording, System):
                 self.record_metadata_system(object_requesting_recording)
             elif isinstance(object_requesting_recording, Solver):
-                record_metadata_solver(object_requesting_recording)
+                self.record_metadata_solver(object_requesting_recording)
 
     def record_metadata_driver(self, object_requesting_recording):
         """

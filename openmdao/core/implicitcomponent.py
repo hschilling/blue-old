@@ -32,9 +32,12 @@ class ImplicitComponent(Component):
         """
         Compute residuals. The model is assumed to be in a scaled state.
         """
+        super(ImplicitComponent, self)._apply_nonlinear()
+
         with self._unscaled_context(
                 outputs=[self._outputs], residuals=[self._residuals]):
             self.apply_nonlinear(self._inputs, self._outputs, self._residuals)
+        self.record_iteration()
 
     def _solve_nonlinear(self, metadata = None):
         """
@@ -63,14 +66,12 @@ class ImplicitComponent(Component):
 
         if self._nl_solver is not None:
             result = self._nl_solver.solve()
-            super(ImplicitComponent, self)._solve_nonlinear(metadata)
+            self.record_iteration(metadata)
             return result
         else:
             with self._unscaled_context(outputs=[self._outputs]):
                 result = self.solve_nonlinear(self._inputs, self._outputs)
-
-            super(ImplicitComponent, self)._solve_nonlinear(metadata)
-
+            self.record_iteration(metadata)
             if result is None:
                 return False, 0., 0.
             elif type(result) is bool:
@@ -108,6 +109,7 @@ class ImplicitComponent(Component):
                         outputs=[self._outputs, d_outputs], residuals=[d_residuals]):
                     self.apply_linear(self._inputs, self._outputs,
                                       d_inputs, d_outputs, d_residuals, mode)
+        self.record_iteration()
 
     def _solve_linear(self, vec_names, mode, metadata = None):
         """
@@ -137,7 +139,7 @@ class ImplicitComponent(Component):
 
         if self._ln_solver is not None:
             result = self._ln_solver.solve(vec_names, mode)
-            super(ImplicitComponent, self)._solve_linear(vec_names, mode, metadata)
+            self.record_iteration(metadata)
             return result
         else:
             failed = False
@@ -160,7 +162,7 @@ class ImplicitComponent(Component):
                 abs_errors.append(result[1])
                 rel_errors.append(result[2])
 
-            super(ImplicitComponent, self)._solve_linear(vec_names, mode, metadata)
+            self.record_iteration(metadata)
 
             return failed, np.linalg.norm(abs_errors), np.linalg.norm(rel_errors)
 

@@ -5,11 +5,13 @@ from __future__ import division
 import inspect
 
 import numpy as np
-from six import iteritems, itervalues
+from six import itervalues
+from itertools import product
 
 from openmdao.core.component import Component
 from openmdao.utils.class_util import overrides_method
 from openmdao.utils.general_utils import warn_deprecation
+from openmdao.jacobians.assembled_jacobian import SUBJAC_META_DEFAULTS
 
 
 class ExplicitComponent(Component):
@@ -142,12 +144,23 @@ class ExplicitComponent(Component):
         Set subjacobian info into our jacobian.
         """
         with self.jacobian_context() as J:
-            for abs_key, meta in iteritems(self._subjacs_info):
-                J._set_partials_meta(abs_key, meta, meta['type'] == 'input')
+            outputs = self._var_abs_names['output']
+            inputs = self._var_abs_names['input']
 
-                method = meta.get('method', False)
-                if method and meta['dependent']:
-                    self._approx_schemes[method].add_approximation(abs_key, meta)
+            for wrt_name, wrt_vars in (('output', outputs), ('input', inputs)):
+                for abs_key in product(outputs, wrt_vars):
+                    meta = self._subjacs_info.get(abs_key, SUBJAC_META_DEFAULTS.copy())
+                    dependent = meta['dependent']
+                    if meta['value'] is None and dependent:
+                        out_size = np.product(self._var_abs2meta['output'][abs_key[0]]['shape'])
+                        in_size = np.product(self._var_abs2meta[wrt_name][abs_key[1]]['shape'])
+                        meta['value'] = np.zeros((out_size, in_size))
+
+                    J._set_partials_meta(abs_key, meta, wrt_name == 'input')
+
+                    method = meta.get('method', False)
+                    if method and dependent:
+                        self._approx_schemes[method].add_approximation(abs_key, meta)
 
         for approx in itervalues(self._approx_schemes):
             approx._init_approximations()
@@ -162,6 +175,8 @@ class ExplicitComponent(Component):
             self.compute(self._inputs, self._outputs)
             self._residuals -= self._outputs
             self._outputs += self._residuals
+
+        self.record_iteration()
 
     def _solve_nonlinear(self, metadata = None):
         """
@@ -188,7 +203,7 @@ class ExplicitComponent(Component):
             self._residuals.set_const(0.0)
             failed = self.compute(self._inputs, self._outputs)
 
-        super(ExplicitComponent, self)._solve_nonlinear(metadata)
+        self.record_iteration(metadata)
 
         return bool(failed), 0., 0.
 
@@ -224,6 +239,7 @@ class ExplicitComponent(Component):
                     self.compute_jacvec_product(self._inputs, self._outputs,
                                                 d_inputs, d_residuals, mode)
                     d_residuals *= -1.0
+        self.record_iteration()
 
     def _solve_linear(self, vec_names, mode, metadata = None):
         """
@@ -261,7 +277,7 @@ class ExplicitComponent(Component):
                 elif mode == 'rev':
                     d_residuals.set_vec(d_outputs)
 
-        super(ExplicitComponent, self)._solve_linear(vec_names, mode, metadata)
+        self.record_iteration(metadata)
 
         return False, 0., 0.
 
