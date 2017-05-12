@@ -177,10 +177,11 @@ class ExplicitComponent(Component):
             relative error.
         """
 
+        super(ExplicitComponent, self)._solve_nonlinear()
+
         if not metadata:
             metadata = {}
-        metadata['caller'] = 'ImplicitComponent._solve_linear'
-
+        metadata['caller'] = 'ImplicitComponent._solve_linear' #TODO_RECORDER - do we need this?
 
         with self._unscaled_context(
                 outputs=[self._outputs], residuals=[self._residuals]):

@@ -46,15 +46,26 @@ class MyExplicitComp(ExplicitComponent):
     def compute_partial_derivs(self, inputs, outputs, partials):
         x = inputs['x']
         y = inputs['y']
-        partials['f', 'x'] = self._jac_type(np.array([
+        jac1 = self._jac_type(np.array([
             [2.0*x[0] - 6.0 + x[1], 2.0*x[1] + 8.0 + x[0]],
             [(2.0*x[0] - 6.0 + x[1])*3., (2.0*x[1] + 8.0 + x[0])*3.]
         ]))
 
-        partials['f', 'y'] = self._jac_type(np.array([
+        if isinstance(jac1, list):
+            jac1 = jac1[0]
+
+
+        partials['f', 'x'] = jac1
+
+        jac2 = self._jac_type(np.array([
             [17.-y[1], 2.-y[0]],
             [(17.-y[1])*3., (2.-y[0])*3.]
         ]))
+
+        if isinstance(jac2, list):
+            jac2 = jac2[0]
+
+        partials['f', 'y'] = jac2
 
 class MyExplicitComp2(ExplicitComponent):
     def __init__(self, jac_type):
@@ -87,11 +98,16 @@ class MyExplicitComp2(ExplicitComponent):
     def compute_partial_derivs(self, inputs, outputs, partials):
         w = inputs['w']
         z = inputs['z']
-        partials['f', 'w'] = self._jac_type(np.array([[
+        jac = self._jac_type(np.array([[
             2.0*w[0] - 10.0,
             2.0*w[1] + 2.0,
             6.
         ]]))
+
+        if isinstance(jac, list):
+            jac = jac[0]
+
+        partials['f', 'w'] = jac
 
 class ExplicitSetItemComp(ExplicitComponent):
     def __init__(self, dtype, value, shape, constructor):
@@ -222,7 +238,7 @@ class TestJacobian(unittest.TestCase):
         top.nl_solver.ln_solver = ScipyIterativeSolver(maxiter=100)
         top.ln_solver = ScipyIterativeSolver(
             maxiter=200, atol=1e-10, rtol=1e-10)
-        prob.model.suppress_solver_output = True
+        prob.set_solver_print(level=0)
 
         prob.setup(check=False)
 
@@ -292,7 +308,7 @@ class TestJacobian(unittest.TestCase):
         prob.model.add_subsystem('C1', comp)
         prob.setup(check=False)
 
-        prob.model.suppress_solver_output = True
+        prob.set_solver_print(level=0)
         prob.run_model()
         prob.model.run_apply_nonlinear()
         prob.model.run_linearize()
@@ -314,7 +330,7 @@ class TestJacobian(unittest.TestCase):
         d1 = prob.model.get_subsystem('d1')
 
         d1.jacobian = DenseJacobian()
-        prob.model.suppress_solver_output = True
+        prob.set_solver_print(level=0)
 
         prob.setup(check=False)
         prob.run_model()
@@ -338,7 +354,7 @@ class TestJacobian(unittest.TestCase):
         prob.model.connect('indep.x', 'C2.a')
         prob.model.connect('C1.c', 'C2.b')
         prob.model.connect('C2.d', 'C3.a')
-        prob.model.suppress_solver_output = True
+        prob.set_solver_print(level=0)
         prob.setup(check=False)
         prob.run_model()
         assert_rel_error(self, prob['C3.ee'], 8.0, 0000.1)

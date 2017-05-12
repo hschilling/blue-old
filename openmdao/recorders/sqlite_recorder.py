@@ -241,48 +241,83 @@ class SqliteRecorder(BaseRecorder):
         Record an iteration using system options.
         """
 
-        if not hasattr(object_requesting_recording,'pathname'):
-            pass
-
-        print('recording_system', object_requesting_recording.pathname, metadata['caller'], object_requesting_recording._inputs._data[0])
+        # TODO_RECORDER - clean this up
+        # if not hasattr(object_requesting_recording,'pathname'):
+        #     pass
+        # print('recording_system', object_requesting_recording.pathname, metadata['caller'], object_requesting_recording._inputs._data[0])
 
         inputs_array = None
         outputs_array = None
         residuals_array = None
 
         inputs, outputs, residuals = object_requesting_recording.get_nonlinear_vectors()
+        inputs_array = outputs_array = residuals_array = None
 
-        # inputs_data = inputs.get_data()
+        # Inputs
+        if self.options['record_inputs'] and inputs:
+            ins = {}
+            if 'i' in self._filtered_system:
+                # use filtered inputs
+                for inp in self._filtered_system['i']:
+                    if inp in inputs._names:
+                        ins[inp] = inputs._names[inp]
+            else:
+                # use all the inputs
+                ins = inputs._names
 
-        if inputs:
             dtype_tuples = []
-            for name, value in iteritems(inputs._names):
-                tple = (name, '{}f8'.format(value.shape))
+            for name, value in iteritems(ins):
+                tple = (name, '({},)f8'.format(len(value)))
                 dtype_tuples.append(tple)
 
             inputs_array = np.zeros((1,), dtype=dtype_tuples)
-            for name, value in iteritems(inputs._names):
+            for name, value in iteritems(ins):
                 inputs_array[name] = value
 
-        if outputs:
+        # Outputs
+        if self.options['record_outputs'] and outputs:
+            outs = {}
+
+            if 'o' in self._filtered_system:
+                # use outputs from filtered list.
+                for out in self._filtered_system['o']:
+                    if out in outputs._names:
+                        outs[out] = outputs._names[out]
+            else:
+                # use all the outputs
+                outs = outputs._names
+
             dtype_tuples = []
-            for name, value in iteritems(outputs._names):
-                tple = (name, '{}f8'.format(value.shape))
+            for name, value in iteritems(outs):
+                tple = (name, '({},)f8'.format(len(value)))
                 dtype_tuples.append(tple)
 
             outputs_array = np.zeros((1,), dtype=dtype_tuples)
-            for name, value in iteritems(outputs._names):
+            for name, value in iteritems(outs):
                 outputs_array[name] = value
 
-        if residuals:
-            dtype_tuples = []
-            for name, value in iteritems(residuals._names):
-                tple = (name, '{}f8'.format(value.shape))
-                dtype_tuples.append(tple)
+        # Residuals
+        if self.options['record_residuals'] and residuals:
+            resids = {}
 
-            residuals_array = np.zeros((1,), dtype=dtype_tuples)
-            for name, value in iteritems(residuals._names):
-                residuals_array[name] = value
+            if 'r' in self._filtered_system:
+                # use filtered residuals
+                for res in self._filtered_system['r']:
+                    if res in residuals._names:
+                        resids[res] = residuals._names[res]
+            else:
+                # use all the residuals
+                resids = residuals._names
+
+            dtype_tuples = []
+            if resids:
+                for name, value in iteritems(resids):
+                    tple = (name, '({},)f8'.format(len(value)))
+                    dtype_tuples.append(tple)
+
+                residuals_array = np.zeros((1,), dtype=dtype_tuples)
+                for name, value in iteritems(resids):
+                    residuals_array[name] = value
 
         inputs_blob = array_to_blob(inputs_array)
         outputs_blob = array_to_blob(outputs_array)
@@ -294,65 +329,9 @@ class SqliteRecorder(BaseRecorder):
         self.con.execute("INSERT INTO system_iterations(iteration_coordinate, timestamp, "
                          "success, msg, inputs , outputs , residuals ) "
                          "VALUES(?,?,?,?,?,?,?)", (format_iteration_coordinate(metadata['coord']),
-                                                     metadata['timestamp'], metadata['success'],
-                                                     metadata['msg'], inputs_blob,
-                                                     outputs_blob, residuals_blob
-                                                     ))
-
-
-        # if isinstance(object_requesting_recording, System): # TODO_RECORDERS DO we need this? We already know it is a System, right?
-        #     dtype_tuples = []
-        #
-        #     # go through the recording options of System to construct the entry to be inserted.
-        #     if self.options['record_inputs']:
-        #
-        #         if self._filtered_system['i']:
-        #             for name, value in iteritems(self._filtered_system['i']):
-        #                 tple = ('input.' + name, '({},)f8'.format(len(value)))
-        #                 dtype_tuples.append(tple)
-        #
-        #     if self.options['record_outputs']:
-        #         if self._filtered_system['o']:
-        #             for name, value in iteritems(self._filtered_system['o']):
-        #                 tple = ('output.' + name, '({},)f8'.format(len(value)))
-        #                 dtype_tuples.append(tple)
-        #
-        #     if self.options['record_residuals']:
-        #         if self._filtered_system['r']:
-        #             for name, value in iteritems(self._filtered_system['o']):
-        #                 tple = ('residual.' + name, '({},)f8'.format(len(value)))
-        #                 dtype_tuples.append(tple)
-        #
-        #     if self.options['record_derivatives']:
-        #         if self._filtered_system['d']:
-        #             for name, value in iteritems(self._filtered_system['d']):
-        #                 tple = ('derivative.' + name, '({},)f8'.format(len(value)))
-        #                 dtype_tuples.append(tple)
-        #
-        #     # Create the mega array that we will write to the database
-        #     # All of this needs to be looked into to be optimized !!
-        #     system_values = np.zeros((1,), dtype=dtype_tuples)
-        #
-        #     # Write the actual values to this array
-        #     # Wish we didn't have to loop through this twice
-        #     if self.options['record_inputs'] and inputs:
-        #         for name, value in iteritems(inputs):
-        #             system_values['input.' + name] = value
-        #     if self.options['record_outputs'] and outputs:
-        #         for name, value in iteritems(outputs):
-        #             system_values['output.' + name] = value
-        #     if self.options['record_residuals'] and residuals:
-        #         for name, value in iteritems(residuals):
-        #             system_values['residual.' + name] = value
-        #     if self.options['record_derivatives'] and derivatives:
-        #         for name, value in iteritems(derivatives):
-        #             system_values['derivative.' + name] = value
-        #
-        #     # Write this mega array to the database
-        #     self.con.execute("INSERT INTO system_iterations(iteration_coordinate, timestamp, "
-        #                      "success, msg, system_values) VALUES(?,?,?,?,?)",
-        #                      (metadata['coord'], metadata['timestamp'], metadata['success'],
-        #                       metadata['msg'], system_values))
+                                                   metadata['timestamp'], metadata['success'],
+                                                   metadata['msg'], inputs_blob,
+                                                   outputs_blob, residuals_blob))
 
     def record_iteration_solver(self, object_requesting_recording, metadata):
         """

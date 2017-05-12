@@ -109,11 +109,15 @@ class Component(System):
 
         self._var_rel_names = {'input': [], 'output': []}
         self._var_rel2data_io = {}
+        self._design_vars = {}
+        self._responses = {}
 
         self._static_mode = False
         self._var_rel2data_io.update(self._static_var_rel2data_io)
         for type_ in ['input', 'output']:
             self._var_rel_names[type_].extend(self._static_var_rel_names[type_])
+        self._design_vars.update(self._static_design_vars)
+        self._responses.update(self._static_responses)
         self.initialize_variables()
         self._static_mode = True
 
@@ -260,7 +264,7 @@ class Component(System):
             Shape of this variable, only required if src_indices not provided and
             val is not an array. Default is None.
         src_indices : int or list of ints or tuple of ints or int ndarray or Iterable or None
-            The indices of the source variable to transfer data from.
+            The global indices of the source variable to transfer data from.
             If val is given as an array_like object, the shapes of val and
             src_indices must match. A value of None implies this input depends
             on all entries of source. Default is None.
@@ -567,10 +571,8 @@ class Component(System):
             val = val.astype(safe_dtype, copy=False)
 
         if rows is not None:
-            if isinstance(rows, (list, tuple, Iterable)):
-                rows = np.array(rows, dtype=int)
-            if isinstance(cols, (list, tuple, Iterable)):
-                cols = np.array(cols, dtype=int)
+            rows = np.array(rows, dtype=int, copy=False)
+            cols = np.array(cols, dtype=int, copy=False)
 
             if rows.shape != cols.shape:
                 raise ValueError('rows and cols must have the same shape,'
@@ -579,6 +581,9 @@ class Component(System):
             if val is not None and val.shape != (1,) and rows.shape != val.shape:
                 raise ValueError('If rows and cols are specified, val must be a scalar or have the '
                                  'same shape, val: {}, rows/cols: {}'.format(val.shape, rows.shape))
+
+            if val is None:
+                val = np.zeros_like(rows, dtype=float)
 
         pattern_matches = self._find_partial_matches(of, wrt)
 
