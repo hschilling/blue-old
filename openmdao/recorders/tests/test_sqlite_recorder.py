@@ -426,6 +426,26 @@ class TestSqliteRecorder(unittest.TestCase):
 
     # TODO_RECORDERS : need to test recording of ImplicitComponent
 
+    # def test_solvers(self): TODO_RECORDERS - use this for testing solvers
+        # Ken said this model includes solvers
+        # prob = Problem()
+        # model = prob.model = SellarDerivativesGrouped()
+        #
+        # prob.driver = pyOptSparseDriver()
+        # prob.driver.options['optimizer'] = OPTIMIZER
+        # if OPTIMIZER == 'SNOPT':
+        #     prob.driver.opt_settings['Verify level'] = 3
+        # prob.driver.options['print_results'] = False
+        #
+        # model.add_design_var('z', lower=np.array([-10.0, 0.0]), upper=np.array([10.0, 10.0]))
+        # model.add_design_var('x', lower=0.0, upper=10.0)
+        # model.add_objective('obj')
+        # model.add_constraint('con1', upper=0.0)
+        # model.add_constraint('con2', upper=0.0)
+        #
+        # prob.setup(check=False, mode='rev')
+        # prob.run_driver()
+
     def qqq_test_includes(self):
         if OPT is None:
             raise unittest.SkipTest("pyoptsparse is not installed")

@@ -2104,7 +2104,7 @@ class System(object):
         """
         pass
 
-    def _solve_nonlinear(self):
+    def _solve_nonlinear(self, metadata=None):
         """
         Compute outputs. The model is assumed to be in a scaled state.
 
@@ -2126,9 +2126,11 @@ class System(object):
 
         # TODO_RECORDERS
         self.iter_count += 1
-        metadata = create_local_meta(None, self.pathname)
-        update_local_meta(metadata, (self.iter_count,))
-        self._rec_mgr.record_iteration(self, metadata)
+        local_meta = create_local_meta(metadata, self.pathname) # TODO_RECORDER - need to replace None with
+              # info about the metadata coming in from the parent
+        update_local_meta(local_meta, (self.iter_count,))
+        # print('recording _solve_linear', self.pathname, self._inputs._data[0])
+        self._rec_mgr.record_iteration(self, local_meta)
 
     def _apply_linear(self, vec_names, mode, var_inds=None):
         """
@@ -2146,7 +2148,7 @@ class System(object):
         """
         pass
 
-    def _solve_linear(self, vec_names, mode):
+    def _solve_linear(self, vec_names, mode, metadata=None):
         """
         Apply inverse jac product. The model is assumed to be in a scaled state.
 
@@ -2175,9 +2177,10 @@ class System(object):
 
         # TODO_RECORDERS
         self.iter_count += 1
-        metadata = create_local_meta(None, self.pathname)
-        update_local_meta(metadata, (self.iter_count,))
-        self._rec_mgr.record_iteration(self, metadata)
+        local_meta = create_local_meta(metadata, self.pathname) # TODO_RECORDER - need to replace None with
+              # info about the metadata coming in from the parent
+        update_local_meta(local_meta, (self.iter_count,))
+        self._rec_mgr.record_iteration(self, local_meta)
 
     def _linearize(self, do_nl=True, do_ln=True):
         """

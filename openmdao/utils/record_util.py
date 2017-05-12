@@ -28,7 +28,8 @@ def create_local_meta(metadata, name):
     if metadata is None:
         parent_coordinate = [rank]
     else:
-        parent_coordinate = metadata['coord']
+        # parent_coordinate = metadata['coord'] # TODO_RECORDER - need to do this!
+        parent_coordinate = [999,]
 
     # The root group has no name, but we want the iteration coordinate to have one.
     if len(parent_coordinate) == 3 and name == '':
@@ -41,6 +42,9 @@ def create_local_meta(metadata, name):
         'success': 1,
         'msg': '',
     }
+
+    if 'caller' in metadata:
+       local_meta['caller'] = metadata['caller']
 
     return local_meta
 

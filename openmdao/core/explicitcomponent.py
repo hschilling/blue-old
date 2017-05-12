@@ -163,7 +163,7 @@ class ExplicitComponent(Component):
             self._residuals -= self._outputs
             self._outputs += self._residuals
 
-    def _solve_nonlinear(self):
+    def _solve_nonlinear(self, metadata = None):
         """
         Compute outputs. The model is assumed to be in a scaled state.
 
@@ -176,12 +176,18 @@ class ExplicitComponent(Component):
         float
             relative error.
         """
+
+        if not metadata:
+            metadata = {}
+        metadata['caller'] = 'ImplicitComponent._solve_linear'
+
+
         with self._unscaled_context(
                 outputs=[self._outputs], residuals=[self._residuals]):
             self._residuals.set_const(0.0)
             failed = self.compute(self._inputs, self._outputs)
 
-        super(ExplicitComponent, self)._solve_nonlinear()
+        super(ExplicitComponent, self)._solve_nonlinear(metadata)
 
         return bool(failed), 0., 0.
 
@@ -218,7 +224,7 @@ class ExplicitComponent(Component):
                                                 d_inputs, d_residuals, mode)
                     d_residuals *= -1.0
 
-    def _solve_linear(self, vec_names, mode):
+    def _solve_linear(self, vec_names, mode, metadata = None):
         """
         Apply inverse jac product. The model is assumed to be in a scaled state.
 
@@ -238,6 +244,11 @@ class ExplicitComponent(Component):
         float
             relative error.
         """
+        if not metadata:
+            metadata = {}
+        metadata['caller'] = 'ImplicitComponent._solve_linear'
+
+
         for vec_name in vec_names:
             d_outputs = self._vectors['output'][vec_name]
             d_residuals = self._vectors['residual'][vec_name]
@@ -249,7 +260,7 @@ class ExplicitComponent(Component):
                 elif mode == 'rev':
                     d_residuals.set_vec(d_outputs)
 
-        super(ExplicitComponent, self)._solve_linear(vec_names, mode)
+        super(ExplicitComponent, self)._solve_linear(vec_names, mode, metadata)
 
         return False, 0., 0.
 

@@ -36,7 +36,7 @@ class ImplicitComponent(Component):
                 outputs=[self._outputs], residuals=[self._residuals]):
             self.apply_nonlinear(self._inputs, self._outputs, self._residuals)
 
-    def _solve_nonlinear(self):
+    def _solve_nonlinear(self, metadata = None):
         """
         Compute outputs. The model is assumed to be in a scaled state.
 
@@ -49,15 +49,21 @@ class ImplicitComponent(Component):
         float
             relative error.
         """
+
+        if not metadata:
+            metadata = {}
+        metadata['caller'] = 'ImplicitComponent._solve_nonlinear'
+
+
         if self._nl_solver is not None:
             result = self._nl_solver.solve()
-            super(ImplicitComponent, self)._solve_nonlinear()
+            super(ImplicitComponent, self)._solve_nonlinear(metadata)
             return result
         else:
             with self._unscaled_context(outputs=[self._outputs]):
                 result = self.solve_nonlinear(self._inputs, self._outputs)
 
-            super(ImplicitComponent, self)._solve_nonlinear()
+            super(ImplicitComponent, self)._solve_nonlinear(metadata)
 
             if result is None:
                 return False, 0., 0.
@@ -97,7 +103,7 @@ class ImplicitComponent(Component):
                     self.apply_linear(self._inputs, self._outputs,
                                       d_inputs, d_outputs, d_residuals, mode)
 
-    def _solve_linear(self, vec_names, mode):
+    def _solve_linear(self, vec_names, mode, metadata = None):
         """
         Apply inverse jac product. The model is assumed to be in a scaled state.
 
@@ -117,9 +123,15 @@ class ImplicitComponent(Component):
         float
             relative error.
         """
+
+        if not metadata:
+            metadata = {}
+        metadata['caller'] = 'ImplicitComponent._solve_linear'
+
+
         if self._ln_solver is not None:
             result = self._ln_solver.solve(vec_names, mode)
-            super(ImplicitComponent, self)._solve_linear(vec_names, mode)
+            super(ImplicitComponent, self)._solve_linear(vec_names, mode, metadata)
             return result
         else:
             failed = False
@@ -142,7 +154,7 @@ class ImplicitComponent(Component):
                 abs_errors.append(result[1])
                 rel_errors.append(result[2])
 
-            super(ImplicitComponent, self)._solve_linear(vec_names, mode)
+            super(ImplicitComponent, self)._solve_linear(vec_names, mode, metadata)
 
             return failed, np.linalg.norm(abs_errors), np.linalg.norm(rel_errors)
 

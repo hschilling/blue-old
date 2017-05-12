@@ -241,6 +241,11 @@ class SqliteRecorder(BaseRecorder):
         Record an iteration using system options.
         """
 
+        if not hasattr(object_requesting_recording,'pathname'):
+            pass
+
+        print('recording_system', object_requesting_recording.pathname, metadata['caller'], object_requesting_recording._inputs._data[0])
+
         inputs_array = None
         outputs_array = None
         residuals_array = None
@@ -282,6 +287,9 @@ class SqliteRecorder(BaseRecorder):
         inputs_blob = array_to_blob(inputs_array)
         outputs_blob = array_to_blob(outputs_array)
         residuals_blob = array_to_blob(residuals_array)
+
+        if not 'caller' in metadata:
+            pass
 
         self.con.execute("INSERT INTO system_iterations(iteration_coordinate, timestamp, "
                          "success, msg, inputs , outputs , residuals ) "
