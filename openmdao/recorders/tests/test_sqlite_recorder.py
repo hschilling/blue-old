@@ -25,6 +25,8 @@ from openmdao.recorders.sqlite_recorder import format_version, blob_to_array
 from openmdao.test_suite.components.sellar import SellarDerivatives, SellarDerivativesGrouped
 from openmdao.test_suite.components.double_sellar import DoubleSellar
 from openmdao.test_suite.components.paraboloid import Paraboloid
+from openmdao.test_suite.groups.implicit_group import TestImplicitGroup
+
 
 # check that pyoptsparse is installed
 # if it is, try to use SNOPT but fall back to SLSQP
@@ -193,6 +195,14 @@ def _assertSolverIterationDataRecordedBasic(test, db_cur):
     row_actual = db_cur.fetchone()
     test.assertTrue(row_actual, 'Solver iterations table is empty. Should contain at least one record')
 
+def _assertSystemIterationDataRecordedBasic(test, db_cur):
+    """
+        Just make sure something was recorded for the system
+    """
+    db_cur.execute("SELECT * FROM system_iterations")
+    row_actual = db_cur.fetchone()
+    test.assertTrue(row_actual, 'System iterations table is empty. Should contain at least one record')
+
 
 def _assertMetadataRecorded(test, db_cur):
 
@@ -278,6 +288,13 @@ class TestSqliteRecorder(unittest.TestCase):
         con = sqlite3.connect(self.filename)
         cur = con.cursor()
         _assertSolverIterationDataRecordedBasic(self, cur)
+        con.close()
+
+    def assertSystemIterationDataRecordedBasic(self):
+        '''Just want to make sure something was recorded'''
+        con = sqlite3.connect(self.filename)
+        cur = con.cursor()
+        _assertSystemIterationDataRecordedBasic(self, cur)
         con.close()
 
     def assertMetadataRecorded(self ):
@@ -945,27 +962,27 @@ class TestSqliteRecorder(unittest.TestCase):
 
     def test_implicit_component(self):
 
-        prob = Problem()
-        model = prob.model = DoubleSellar()
+        group = TestImplicitGroup(lnSolverClass=ScipyIterativeSolver)
 
-        g1 = model.get_subsystem('g1')
-        g1.nl_solver = NewtonSolver()
-        g1.nl_solver.options['rtol'] = 1.0e-5
-        g1.ln_solver = DirectSolver()
+        p = Problem(group)
+        p.setup(check=False)
+        p.set_solver_print(level=0)
 
-        g2 = model.get_subsystem('g2')
-        g2.nl_solver = NewtonSolver()
-        g2.nl_solver.options['rtol'] = 1.0e-5
-        g2.ln_solver = DirectSolver()
+        d_inputs, d_outputs, d_residuals = group.get_linear_vectors()
 
-        model.nl_solver = NewtonSolver()
-        model.ln_solver = ScipyIterativeSolver()
+        # forward
+        d_residuals.set_const(1.0)
+        d_outputs.set_const(0.0)
 
-        model.nl_solver.options['solve_subsystems'] = True
+        cmp = group.get_subsystem('C1') # an ImpComp
 
-        prob.setup()
-        t0, t1 = run_driver(prob)
-        prob.cleanup()
+        cmp.add_recorder(self.recorder)
+
+        group.run_solve_linear(['linear'], 'fwd')
+
+
+        self.assertSystemIterationDataRecordedBasic()
+
 
 
 
